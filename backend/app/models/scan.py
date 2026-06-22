@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -56,3 +56,15 @@ class Report(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     scan: Mapped[Scan] = relationship(back_populates="reports")
+
+
+class ScheduledScan(Base):
+    __tablename__ = "scheduled_scans"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    target: Mapped[str] = mapped_column(String(255), index=True)
+    ports: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    interval_minutes: Mapped[int] = mapped_column(Integer, default=1440)
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    next_run_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

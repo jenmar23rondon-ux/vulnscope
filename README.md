@@ -7,10 +7,14 @@ It is more than a simple port scanner: it combines target scanning, service dete
 ## Features
 
 - JWT authentication with a default admin user
+- Role-based access control for analyst/admin scan actions
 - Vulnerability scan creation
+- Background scan jobs with queued/running/completed states
+- Scheduled scan records for recurring analysis workflows
 - TCP port scanning for selected targets
+- Optional Nmap integration with socket-scanner fallback
 - Service detection for common ports
-- CVE-style lookup engine with curated demo mappings
+- CVE-style lookup engine with curated demo mappings and optional NVD lookup
 - Risk score calculation
 - PostgreSQL persistence with SQLAlchemy
 - Scan history and dashboard metrics
@@ -26,7 +30,7 @@ It is more than a simple port scanner: it combines target scanning, service dete
 | Frontend | React, TypeScript, Recharts, Vite |
 | Backend | Python, FastAPI, SQLAlchemy |
 | Database | PostgreSQL |
-| Security | JWT, TCP scanning, service detection, CVE-style lookup, risk scoring |
+| Security | JWT, RBAC, TCP scanning, optional Nmap, service detection, CVE-style lookup, risk scoring |
 | DevOps | Docker, Docker Compose, GitHub Actions |
 
 ## Architecture
@@ -127,6 +131,8 @@ npm run dev
 | POST | `/auth/login` | Authenticate and return a JWT |
 | POST | `/scans` | Create a vulnerability scan |
 | GET | `/scans` | List scan history |
+| POST | `/scans/scheduled` | Create a scheduled scan record |
+| GET | `/scans/scheduled` | List scheduled scans |
 | GET | `/vulnerabilities` | List detected vulnerabilities |
 | GET | `/dashboard` | Return dashboard metrics |
 | GET | `/reports/scans.csv` | Export scan data as CSV |
@@ -138,12 +144,37 @@ Use VulnScope only against systems you own or have explicit permission to test.
 
 The CVE engine uses curated demo mappings for portfolio purposes. It is designed to demonstrate backend architecture, security workflows and reporting, not to replace enterprise vulnerability scanners.
 
+## Railway / Vercel Deployment
+
+This project is also ready for split deployment:
+
+| Service | Platform | Root directory |
+| --- | --- | --- |
+| Backend API | Railway | `backend` |
+| Frontend | Vercel or Railway | `frontend` |
+
+Backend variables:
+
+```env
+DATABASE_URL=<Railway PostgreSQL URL>
+JWT_SECRET=<long-random-secret>
+FRONTEND_ORIGIN=<frontend-url>
+USE_NMAP=false
+ENABLE_LIVE_CVE_LOOKUP=false
+```
+
+Frontend variable:
+
+```env
+VITE_API_URL=<backend-api-url>
+```
+
+Use `USE_NMAP=false` in cloud environments unless the container image includes
+Nmap and the platform allows the scan mode you need.
+
 ## Roadmap
 
-- Real Nmap integration
-- Public CVE API integration
-- Scheduled scans
-- Role-based access control
-- Background scan jobs
+- Advanced scan scheduler worker
+- Authenticated user management screen
 - Report storage
-- Cloud deployment
+- Cloud deployment hardening

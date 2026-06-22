@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 10080
     frontend_origin: str = "http://localhost:5174"
+    use_nmap: bool = True
+    enable_live_cve_lookup: bool = False
+    nvd_api_url: str = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 
     class Config:
         env_file = ".env"
