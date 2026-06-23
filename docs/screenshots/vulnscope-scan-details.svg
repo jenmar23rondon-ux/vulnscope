@@ -1,0 +1,17 @@
+<svg width="1440" height="820" viewBox="0 0 1440 820" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="820" fill="#08111f"/>
+  <text x="145" y="105" fill="#f8fafc" font-family="Segoe UI, Arial" font-size="34" font-weight="800">Scan details</text>
+  <text x="145" y="136" fill="#93c5fd" font-family="Segoe UI, Arial" font-size="16">Target: 203.0.113.24 · Background job completed · Report saved</text>
+  <rect x="145" y="175" width="1150" height="565" rx="16" fill="#101c2e" stroke="#263a57"/>
+  <text x="185" y="230" fill="#f8fafc" font-family="Segoe UI, Arial" font-size="22" font-weight="700">Open ports and CVE matches</text>
+  <g font-family="Segoe UI, Arial" font-size="15">
+    <text x="185" y="285" fill="#93c5fd">Port</text><text x="330" y="285" fill="#93c5fd">Service</text><text x="535" y="285" fill="#93c5fd">CVE</text><text x="760" y="285" fill="#93c5fd">Severity</text><text x="940" y="285" fill="#93c5fd">CVSS</text>
+    <line x1="185" y1="303" x2="1240" y2="303" stroke="#263a57"/>
+    <text x="185" y="350" fill="#f8fafc">22/tcp</text><text x="330" y="350" fill="#f8fafc">OpenSSH</text><text x="535" y="350" fill="#cbd5e1">CVE-2023-DEMO-001</text><text x="760" y="350" fill="#f59e0b">HIGH</text><text x="940" y="350" fill="#f59e0b">7.8</text>
+    <text x="185" y="405" fill="#f8fafc">80/tcp</text><text x="330" y="405" fill="#f8fafc">Apache httpd</text><text x="535" y="405" fill="#cbd5e1">CVE-2021-DEMO-049</text><text x="760" y="405" fill="#ef4444">CRITICAL</text><text x="940" y="405" fill="#ef4444">9.8</text>
+    <text x="185" y="460" fill="#f8fafc">5432/tcp</text><text x="330" y="460" fill="#f8fafc">PostgreSQL</text><text x="535" y="460" fill="#cbd5e1">No match</text><text x="760" y="460" fill="#22c55e">LOW</text><text x="940" y="460" fill="#22c55e">2.1</text>
+  </g>
+  <rect x="185" y="540" width="1010" height="105" rx="14" fill="#0b1424" stroke="#263a57"/>
+  <text x="215" y="582" fill="#f8fafc" font-family="Segoe UI, Arial" font-size="19" font-weight="700">Historical comparison</text>
+  <text x="215" y="618" fill="#cbd5e1" font-family="Segoe UI, Arial" font-size="16">Risk increased from 64 to 91 after a new exposed web service and critical CVE match.</text>
+</svg>

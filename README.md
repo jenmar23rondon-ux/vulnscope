@@ -4,6 +4,22 @@ VulnScope is a professional vulnerability analysis platform built as a backend a
 
 It is more than a simple port scanner: it combines target scanning, service detection, CVE-style mapping, risk scoring, scan history and report exports inside a full-stack dashboard.
 
+## Project Identity
+
+**VulnScope** is a vulnerability scanner portfolio project focused on authorized target analysis, service discovery, CVE enrichment, background scan workflows and security reporting.
+
+## Screenshots
+
+The screenshots below use sanitized demo data and documentation IP ranges.
+
+### Vulnerability dashboard
+
+<img src="docs/screenshots/vulnscope-dashboard.svg" alt="VulnScope vulnerability dashboard" width="900" />
+
+### Scan details and historical comparison
+
+<img src="docs/screenshots/vulnscope-scan-details.svg" alt="VulnScope scan detail screen" width="900" />
+
 ## Features
 
 - JWT authentication with a default admin user
@@ -18,8 +34,10 @@ It is more than a simple port scanner: it combines target scanning, service dete
 - Risk score calculation
 - PostgreSQL persistence with SQLAlchemy
 - Scan history and dashboard metrics
+- Historical target comparison for risk changes
 - Vulnerability listing by severity
 - PDF and CSV report exports
+- Saved report records linked to scans
 - Docker Compose environment
 - GitHub Actions CI for backend and frontend validation
 
@@ -104,6 +122,13 @@ Email: admin@vulnscope.local
 Password: Admin1234
 ```
 
+## Testing
+
+- Backend import and syntax validation with Python compile checks.
+- Frontend production build validation with Vite.
+- API smoke checks through FastAPI Swagger at `/docs`.
+- Recommended next tests: scan creation, RBAC permissions, report exports and CVE lookup behavior.
+
 ## Run Locally
 
 ### Backend
@@ -144,6 +169,16 @@ Use VulnScope only against systems you own or have explicit permission to test.
 
 The CVE engine uses curated demo mappings for portfolio purposes. It is designed to demonstrate backend architecture, security workflows and reporting, not to replace enterprise vulnerability scanners.
 
+## What I Learned
+
+- JWT authentication and role-based access control.
+- FastAPI architecture for security tooling.
+- TCP port scanning and optional Nmap integration.
+- Service detection and CVE-style enrichment.
+- PostgreSQL data modeling with SQLAlchemy.
+- Background scan states and scheduled scan records.
+- Risk scoring, report generation and Dockerized execution.
+
 ## Railway / Vercel Deployment
 
 This project is also ready for split deployment:
@@ -174,7 +209,12 @@ Nmap and the platform allows the scan mode you need.
 
 ## Roadmap
 
-- Advanced scan scheduler worker
+- Advanced scan scheduler worker with recurring execution
 - Authenticated user management screen
-- Report storage
+- Deeper NVD/CVE provider integration
+- Historical comparison charts by target
 - Cloud deployment hardening
+
+## License
+
+MIT License.
