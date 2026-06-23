@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -14,7 +14,7 @@ security = HTTPBearer()
 
 
 class LoginInput(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
