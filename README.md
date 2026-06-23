@@ -8,6 +8,19 @@ It is more than a simple port scanner: it combines target scanning, Nmap-powered
 
 **VulnScope** is a vulnerability scanner portfolio project focused on authorized target analysis, service discovery, CVE enrichment, background scan workflows and security reporting.
 
+## Live Demo
+
+[Open VulnScope](https://vulnscope.vercel.app)
+
+Demo credentials:
+
+```text
+Email: admin@vulnscope.local
+Password: Admin1234
+```
+
+> This is an educational portfolio environment. Only scan systems you own or are authorized to test.
+
 ## Screenshots
 
 The screenshots below use sanitized demo data and documentation IP ranges.
@@ -221,6 +234,13 @@ you need.
 - Deeper NVD/OSV/CIRCL provider integration
 - Critical finding notifications by email or WebSocket
 - Cloud deployment hardening
+
+## Author
+
+Built by Jenmar Rondon.
+
+- GitHub: [jenmar23rondon-ux](https://github.com/jenmar23rondon-ux)
+- Repository: [vulnscope](https://github.com/jenmar23rondon-ux/vulnscope)
 
 ## License
 
