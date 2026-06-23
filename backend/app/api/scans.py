@@ -54,6 +54,28 @@ def serialize_scan(scan: Scan) -> dict:
     }
 
 
+def _severity_counts(vulnerabilities: list[Vulnerability]) -> dict:
+    counts = {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0}
+    for vuln in vulnerabilities:
+        counts[vuln.severity] = counts.get(vuln.severity, 0) + 1
+    return counts
+
+
+def _scan_summary(scan: Scan) -> dict:
+    counts = _severity_counts(scan.vulnerabilities)
+    return {
+        "id": scan.id,
+        "target": scan.target,
+        "status": scan.status,
+        "risk_score": scan.risk_score,
+        "started_at": scan.started_at,
+        "finished_at": scan.finished_at,
+        "open_ports": len([port for port in scan.ports if port.state == "open"]),
+        "vulnerabilities": len(scan.vulnerabilities),
+        "severity_counts": counts,
+    }
+
+
 def _run_scan_job(scan_id: int, target: str, ports: list[int] | None) -> None:
     db = SessionLocal()
     try:
@@ -110,14 +132,6 @@ def list_scans(db: Session = Depends(get_db), _user: User = Depends(get_current_
     return [serialize_scan(scan) for scan in scans]
 
 
-@router.get("/{scan_id}")
-def get_scan(scan_id: int, db: Session = Depends(get_db), _user: User = Depends(get_current_user)):
-    scan = db.query(Scan).filter(Scan.id == scan_id).first()
-    if not scan:
-        raise HTTPException(status_code=404, detail="Scan not found")
-    return serialize_scan(scan)
-
-
 @router.post("/scheduled")
 def create_scheduled_scan(
     payload: ScheduledScanInput,
@@ -160,3 +174,58 @@ def list_scheduled_scans(
         }
         for item in items
     ]
+
+
+@router.get("/targets/{target}/history")
+def target_history(target: str, db: Session = Depends(get_db), _user: User = Depends(get_current_user)):
+    scans = (
+        db.query(Scan)
+        .filter(Scan.target == target)
+        .order_by(Scan.started_at.desc())
+        .limit(20)
+        .all()
+    )
+    return [_scan_summary(scan) for scan in scans]
+
+
+@router.get("/{scan_id}/compare-previous")
+def compare_previous_scan(scan_id: int, db: Session = Depends(get_db), _user: User = Depends(get_current_user)):
+    current = db.query(Scan).filter(Scan.id == scan_id).first()
+    if not current:
+        raise HTTPException(status_code=404, detail="Scan not found")
+
+    previous = (
+        db.query(Scan)
+        .filter(Scan.target == current.target, Scan.id != current.id, Scan.started_at < current.started_at)
+        .order_by(Scan.started_at.desc())
+        .first()
+    )
+    if not previous:
+        return {
+            "scan_id": current.id,
+            "previous_scan_id": None,
+            "message": "No previous scan found for this target",
+            "new": [],
+            "fixed": [],
+            "persisting": [],
+        }
+
+    current_cves = {vuln.cve for vuln in current.vulnerabilities}
+    previous_cves = {vuln.cve for vuln in previous.vulnerabilities}
+    return {
+        "scan_id": current.id,
+        "previous_scan_id": previous.id,
+        "target": current.target,
+        "new": sorted(current_cves - previous_cves),
+        "fixed": sorted(previous_cves - current_cves),
+        "persisting": sorted(current_cves & previous_cves),
+        "risk_delta": round(current.risk_score - previous.risk_score, 2),
+    }
+
+
+@router.get("/{scan_id}")
+def get_scan(scan_id: int, db: Session = Depends(get_db), _user: User = Depends(get_current_user)):
+    scan = db.query(Scan).filter(Scan.id == scan_id).first()
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    return serialize_scan(scan)

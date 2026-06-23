@@ -14,6 +14,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -124,6 +126,14 @@ function Dashboard() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!scans.some((scan) => ["queued", "running"].includes(scan.status))) {
+      return;
+    }
+    const timer = window.setInterval(loadData, 3000);
+    return () => window.clearInterval(timer);
+  }, [scans]);
+
   function handleScan(scan: Scan) {
     setSelectedScan(scan);
     loadData();
@@ -164,6 +174,40 @@ function Dashboard() {
                 <Bar dataKey="count" fill="#38bdf8" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        </section>
+      </div>
+
+      <div className="grid-two">
+        <section className="panel">
+          <h2>Risk Trend</h2>
+          <div className="chart small-chart">
+            <ResponsiveContainer>
+              <LineChart data={dashboard?.risk_trend ?? []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#26364f" />
+                <XAxis dataKey="scan" stroke="#9fb3d1" />
+                <YAxis domain={[0, 100]} stroke="#9fb3d1" />
+                <Tooltip />
+                <Line type="monotone" dataKey="risk_score" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </section>
+
+        <section className="panel">
+          <h2>Top Risk Targets</h2>
+          <div className="table">
+            <div className="table-head target-row">
+              <span>Target</span><span>Scans</span><span>Max risk</span><span>High/Critical</span>
+            </div>
+            {(dashboard?.top_targets ?? []).map((target) => (
+              <div className="target-row" key={target.target}>
+                <span>{target.target}</span>
+                <span>{target.scans}</span>
+                <span className={target.max_risk >= 60 ? "risk high" : "risk"}>{target.max_risk}</span>
+                <span>{target.critical_or_high}</span>
+              </div>
+            ))}
           </div>
         </section>
       </div>

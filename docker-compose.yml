@@ -18,6 +18,8 @@ services:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@postgres:5432/vulnscope
       JWT_SECRET: docker_vulnscope_secret_change_me
       FRONTEND_ORIGIN: http://localhost:5174
+      USE_NMAP: "true"
+      ENABLE_LIVE_CVE_LOOKUP: "false"
     ports:
       - "8001:8001"
 

@@ -32,5 +32,7 @@ export type DashboardData = {
   high_or_critical: number;
   average_risk: number;
   severity_counts: { severity: string; count: number }[];
+  risk_trend: { scan: number; target: string; risk_score: number; started_at: string }[];
+  top_targets: { target: string; scans: number; max_risk: number; critical_or_high: number }[];
   recent_scans: Scan[];
 };

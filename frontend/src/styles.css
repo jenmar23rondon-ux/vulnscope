@@ -248,6 +248,10 @@ button:hover,
   height: 260px;
 }
 
+.small-chart {
+  height: 220px;
+}
+
 .table {
   overflow: auto;
 }
@@ -255,6 +259,15 @@ button:hover,
 .scan-row {
   display: grid;
   grid-template-columns: 1.2fr 0.7fr 0.5fr 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 10px;
+  border-bottom: 1px solid #26364f;
+}
+
+.target-row {
+  display: grid;
+  grid-template-columns: 1.4fr 0.45fr 0.55fr 0.7fr;
   align-items: center;
   gap: 12px;
   padding: 13px 10px;

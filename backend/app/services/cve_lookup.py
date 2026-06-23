@@ -39,18 +39,22 @@ DEMO_CVES = {
 
 
 def lookup_cves(service: str) -> list[dict]:
+    normalized_service = service.lower()
     if settings.enable_live_cve_lookup:
         live_results = _lookup_nvd_cves(service)
         if live_results:
             return live_results
-    return DEMO_CVES.get(service, [])
+    for key, findings in DEMO_CVES.items():
+        if key in normalized_service:
+            return findings
+    return []
 
 
 def _lookup_nvd_cves(service: str) -> list[dict]:
     try:
         response = httpx.get(
             settings.nvd_api_url,
-            params={"keywordSearch": service, "cvssV3Severity": "HIGH"},
+            params={"keywordSearch": service[:120]},
             timeout=8,
         )
         response.raise_for_status()
@@ -59,10 +63,7 @@ def _lookup_nvd_cves(service: str) -> list[dict]:
         for item in items:
             cve = item.get("cve", {})
             metrics = cve.get("metrics", {})
-            cvss = (
-                metrics.get("cvssMetricV31", [{}])[0].get("cvssData", {})
-                or metrics.get("cvssMetricV30", [{}])[0].get("cvssData", {})
-            )
+            cvss = _extract_cvss(metrics)
             descriptions = cve.get("descriptions", [])
             description = next((entry["value"] for entry in descriptions if entry.get("lang") == "en"), "CVE match from NVD.")
             results.append(
@@ -76,3 +77,15 @@ def _lookup_nvd_cves(service: str) -> list[dict]:
         return results
     except Exception:
         return []
+
+
+def _extract_cvss(metrics: dict) -> dict:
+    for key in ("cvssMetricV31", "cvssMetricV30", "cvssMetricV2"):
+        values = metrics.get(key, [])
+        if values:
+            metric = values[0]
+            cvss_data = metric.get("cvssData", {})
+            if "baseSeverity" not in cvss_data and "baseSeverity" in metric:
+                cvss_data["baseSeverity"] = metric["baseSeverity"]
+            return cvss_data
+    return {"baseSeverity": "MEDIUM", "baseScore": 5.0}

@@ -2,7 +2,7 @@
 
 VulnScope is a professional vulnerability analysis platform built as a backend and cybersecurity portfolio project.
 
-It is more than a simple port scanner: it combines target scanning, service detection, CVE-style mapping, risk scoring, scan history and report exports inside a full-stack dashboard.
+It is more than a simple port scanner: it combines target scanning, Nmap-powered service detection, CVE enrichment, risk scoring, scan history, historical comparison and report exports inside a full-stack dashboard.
 
 ## Project Identity
 
@@ -28,13 +28,14 @@ The screenshots below use sanitized demo data and documentation IP ranges.
 - Background scan jobs with queued/running/completed states
 - Scheduled scan records for recurring analysis workflows
 - TCP port scanning for selected targets
-- Optional Nmap integration with socket-scanner fallback
+- Optional Nmap `-sV -Pn` integration with socket-scanner fallback
 - Service detection for common ports
-- CVE-style lookup engine with curated demo mappings and optional NVD lookup
+- CVE lookup engine with curated demo mappings and optional NVD lookup
 - Risk score calculation
 - PostgreSQL persistence with SQLAlchemy
-- Scan history and dashboard metrics
-- Historical target comparison for risk changes
+- Scan history, dashboard metrics and executive severity trends
+- Historical target comparison for new, fixed and persisting findings
+- Top risk targets based on repeated scans and high severity findings
 - Vulnerability listing by severity
 - PDF and CSV report exports
 - Saved report records linked to scans
@@ -48,7 +49,7 @@ The screenshots below use sanitized demo data and documentation IP ranges.
 | Frontend | React, TypeScript, Recharts, Vite |
 | Backend | Python, FastAPI, SQLAlchemy |
 | Database | PostgreSQL |
-| Security | JWT, RBAC, TCP scanning, optional Nmap, service detection, CVE-style lookup, risk scoring |
+| Security | JWT, RBAC, TCP scanning, optional Nmap, service detection, CVE/NVD lookup, risk scoring |
 | DevOps | Docker, Docker Compose, GitHub Actions |
 
 ## Architecture
@@ -158,10 +159,12 @@ npm run dev
 | GET | `/scans` | List scan history |
 | POST | `/scans/scheduled` | Create a scheduled scan record |
 | GET | `/scans/scheduled` | List scheduled scans |
+| GET | `/scans/targets/{target}/history` | View historical scan summaries for one target |
+| GET | `/scans/{scan_id}/compare-previous` | Compare a scan against the previous scan for the same target |
 | GET | `/vulnerabilities` | List detected vulnerabilities |
 | GET | `/dashboard` | Return dashboard metrics |
-| GET | `/reports/scans.csv` | Export scan data as CSV |
-| GET | `/reports/scans.pdf` | Export scan data as PDF |
+| GET | `/reports/{scan_id}.csv` | Export one scan as CSV |
+| GET | `/reports/{scan_id}.pdf` | Export one scan as PDF |
 
 ## Safe Usage
 
@@ -173,10 +176,11 @@ The CVE engine uses curated demo mappings for portfolio purposes. It is designed
 
 - JWT authentication and role-based access control.
 - FastAPI architecture for security tooling.
-- TCP port scanning and optional Nmap integration.
-- Service detection and CVE-style enrichment.
+- TCP port scanning and Nmap service/version detection.
+- Service detection and optional NVD CVE enrichment.
 - PostgreSQL data modeling with SQLAlchemy.
 - Background scan states and scheduled scan records.
+- Historical scan comparison by target.
 - Risk scoring, report generation and Dockerized execution.
 
 ## Railway / Vercel Deployment
@@ -204,15 +208,18 @@ Frontend variable:
 VITE_API_URL=<backend-api-url>
 ```
 
-Use `USE_NMAP=false` in cloud environments unless the container image includes
-Nmap and the platform allows the scan mode you need.
+The provided backend Dockerfile installs Nmap, so Docker Compose can run
+service/version detection locally. Use `USE_NMAP=false` in cloud environments
+unless the container image includes Nmap and the platform allows the scan mode
+you need.
 
 ## Roadmap
 
-- Advanced scan scheduler worker with recurring execution
+- Redis/Celery worker for high-volume scan queues
+- Executing scheduled scans automatically from a worker
 - Authenticated user management screen
-- Deeper NVD/CVE provider integration
-- Historical comparison charts by target
+- Deeper NVD/OSV/CIRCL provider integration
+- Critical finding notifications by email or WebSocket
 - Cloud deployment hardening
 
 ## License

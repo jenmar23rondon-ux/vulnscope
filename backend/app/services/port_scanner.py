@@ -39,7 +39,7 @@ def scan_ports(target: str, ports: list[int] | None = None) -> list[dict]:
 def _scan_ports_with_nmap(target: str, ports: list[int]) -> list[dict]:
     command = [
         "nmap",
-        "-sT",
+        "-sV",
         "-Pn",
         "-p",
         ",".join(str(port) for port in ports),
@@ -55,7 +55,7 @@ def _scan_ports_with_nmap(target: str, ports: list[int]) -> list[dict]:
             port_number = int(port_node.attrib["portid"])
             state = port_node.find("state").attrib.get("state", "closed")
             service_node = port_node.find("service")
-            service = service_node.attrib.get("name", detect_service(port_number)) if service_node is not None else detect_service(port_number)
+            service = _format_nmap_service(service_node, port_number)
             results_by_port[port_number] = {
                 "port": port_number,
                 "protocol": port_node.attrib.get("protocol", "tcp"),
@@ -74,3 +74,15 @@ def _closed_port(port: int) -> dict:
         "service": detect_service(port),
         "state": "closed",
     }
+
+
+def _format_nmap_service(service_node: ET.Element | None, port_number: int) -> str:
+    if service_node is None:
+        return detect_service(port_number)
+
+    parts = [
+        service_node.attrib.get("product") or service_node.attrib.get("name") or detect_service(port_number),
+        service_node.attrib.get("version", ""),
+        service_node.attrib.get("extrainfo", ""),
+    ]
+    return " ".join(part.strip() for part in parts if part and part.strip())[:100]
