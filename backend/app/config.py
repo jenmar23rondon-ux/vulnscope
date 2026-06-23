@@ -1,3 +1,4 @@
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -11,6 +12,13 @@ class Settings(BaseSettings):
     use_nmap: bool = True
     enable_live_cve_lookup: bool = False
     nvd_api_url: str = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+
+    @field_validator("database_url")
+    @classmethod
+    def use_psycopg_driver(cls, value: str) -> str:
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+psycopg://", 1)
+        return value
 
     class Config:
         env_file = ".env"
