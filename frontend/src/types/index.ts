@@ -36,3 +36,10 @@ export type DashboardData = {
   top_targets: { target: string; scans: number; max_risk: number; critical_or_high: number }[];
   recent_scans: Scan[];
 };
+
+export type ScanHistoryPage = {
+  items: Scan[];
+  total: number;
+  page: number;
+  page_size: number;
+};
