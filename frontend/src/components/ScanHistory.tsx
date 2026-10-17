@@ -3,9 +3,11 @@ import { ArrowUpRight, ChevronLeft, ChevronRight, History, LoaderCircle, RotateC
 import { isAxiosError } from "axios";
 import { api } from "../services/api";
 import type { Scan, ScanHistoryPage } from "../types";
+import { scanDate } from "../utils/format";
 
 type Props = {
   totalScans: number;
+  initialSearch?: string;
   selectedId?: number;
   refreshKey: number;
   canReset: boolean;
@@ -17,14 +19,9 @@ const statusLabels: Record<string, string> = {
   completed: "Completed", running: "Running", queued: "Queued", failed: "Failed"
 };
 
-function scanDate(value: string) {
-  const date = new Date(/(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`);
-  return Number.isNaN(date.getTime()) ? "Date unavailable" : new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(date);
-}
-
-export function ScanHistory({ totalScans, selectedId, refreshKey, canReset, onSelect, onReset }: Props) {
-  const [search, setSearch] = useState("");
-  const [term, setTerm] = useState("");
+export function ScanHistory({ totalScans, initialSearch = "", selectedId, refreshKey, canReset, onSelect, onReset }: Props) {
+  const [search, setSearch] = useState(initialSearch);
+  const [term, setTerm] = useState(initialSearch);
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
