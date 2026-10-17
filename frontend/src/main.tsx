@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Activity,
@@ -23,6 +23,7 @@ import {
 } from "recharts";
 import { api, API_URL } from "./services/api";
 import type { DashboardData, Scan } from "./types";
+import { ScanHistory } from "./components/ScanHistory";
 import "./styles.css";
 
 function Login({ onLogin }: { onLogin: () => void }) {
@@ -111,20 +112,35 @@ function Dashboard() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [scans, setScans] = useState<Scan[]>([]);
   const [selectedScan, setSelectedScan] = useState<Scan | null>(null);
+  const [historyVersion, setHistoryVersion] = useState(0);
+  const [loadError, setLoadError] = useState("");
+  const loadSequence = useRef(0);
+  const [canReset] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("vulnscope_user") || "null")?.role === "admin"; }
+    catch { return false; }
+  });
 
-  async function loadData() {
-    const [dashboardResponse, scansResponse] = await Promise.all([
-      api.get("/dashboard"),
-      api.get("/scans")
-    ]);
-    setDashboard(dashboardResponse.data);
-    setScans(scansResponse.data);
-    setSelectedScan(scansResponse.data[0] || null);
-  }
+  const loadData = useCallback(async () => {
+    const sequence = ++loadSequence.current;
+    try {
+      const [dashboardResponse, scansResponse] = await Promise.all([
+        api.get<DashboardData>("/dashboard"), api.get<Scan[]>("/scans")
+      ]);
+      if (sequence !== loadSequence.current) return;
+      setDashboard(dashboardResponse.data);
+      setScans(scansResponse.data);
+      setSelectedScan((current) => scansResponse.data.find((scan) => scan.id === current?.id) ?? current ?? scansResponse.data[0] ?? null);
+      setHistoryVersion((value) => value + 1);
+      setLoadError("");
+    } catch {
+      if (sequence === loadSequence.current) setLoadError("No se pudieron actualizar las métricas. Revisa tu conexión y vuelve a intentarlo.");
+    }
+  }, []);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    void loadData();
+    return () => { loadSequence.current += 1; };
+  }, [loadData]);
 
   useEffect(() => {
     if (!scans.some((scan) => ["queued", "running"].includes(scan.status))) {
@@ -132,15 +148,27 @@ function Dashboard() {
     }
     const timer = window.setInterval(loadData, 3000);
     return () => window.clearInterval(timer);
-  }, [scans]);
+  }, [scans, loadData]);
 
   function handleScan(scan: Scan) {
     setSelectedScan(scan);
     loadData();
   }
 
+  function handleHistoryReset() {
+    loadSequence.current += 1;
+    setScans([]);
+    setSelectedScan(null);
+    setDashboard((current) => current ? {
+      ...current, total_scans: 0, open_ports: 0, vulnerabilities: 0, high_or_critical: 0,
+      average_risk: 0, severity_counts: [], risk_trend: [], top_targets: [], recent_scans: []
+    } : null);
+    void loadData();
+  }
+
   return (
     <main className="content">
+      {loadError && <div className="error" role="alert">{loadError} <button type="button" className="button-secondary" onClick={() => void loadData()}>Reintentar</button></div>}
       <div className="hero">
         <div>
           <p className="eyebrow">Security Project 5</p>
@@ -212,22 +240,8 @@ function Dashboard() {
         </section>
       </div>
 
-      <section className="panel">
-        <h2>Scan History</h2>
-        <div className="table">
-          <div className="table-head scan-row">
-            <span>Target</span><span>Status</span><span>Risk</span><span>Started</span>
-          </div>
-          {scans.map((scan) => (
-            <button className="scan-row row-button" key={scan.id} onClick={() => setSelectedScan(scan)}>
-              <span>{scan.target}</span>
-              <span>{scan.status}</span>
-              <span className={scan.risk_score >= 60 ? "risk high" : "risk"}>{scan.risk_score}</span>
-              <span>{new Date(scan.started_at).toLocaleString()}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+      <ScanHistory totalScans={dashboard?.total_scans ?? 0} selectedId={selectedScan?.id}
+        refreshKey={historyVersion} canReset={canReset} onSelect={setSelectedScan} onReset={handleHistoryReset} />
 
       {selectedScan && (
         <div className="grid-two">

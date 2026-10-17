@@ -139,8 +139,22 @@ Password: Admin1234
 ## Testing
 
 - Backend import and syntax validation with Python compile checks.
+- History integration tests: from `backend`, run `python -m unittest discover -s tests -v`. Tests use a temporary SQLite database and do not scan external targets.
 - Frontend production build validation with Vite.
 - API smoke checks through FastAPI Swagger at `/docs`.
+
+## Scan history and reset
+
+The dashboard history supports case-insensitive target search, status filters,
+date/risk sorting and pagination across the complete history.
+
+Administrators can choose **Reiniciar historial**, then type **REINICIAR** to
+confirm. This permanently removes all scans, detected ports, findings and saved
+report records for the shared dashboard, and resets its metrics and charts.
+User accounts, credentials, configuration and scheduled scan definitions remain.
+Reset is refused while a scan is queued or running. The reset endpoint is
+`DELETE /scans/history`, with JSON body `{"confirmation":"REINICIAR"}`.
+Public registration creates analyst accounts only.
 - Recommended next tests: scan creation, RBAC permissions, report exports and CVE lookup behavior.
 
 ## Run Locally

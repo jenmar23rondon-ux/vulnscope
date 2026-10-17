@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta
+from typing import Literal
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy import func, text
+from sqlalchemy.orm import Session, selectinload
 
 from app.api.auth import get_current_user, require_roles
 from app.database.session import SessionLocal, get_db
-from app.models import Port, Scan, ScheduledScan, User, Vulnerability
+from app.models import Port, Report, Scan, ScheduledScan, User, Vulnerability
 from app.services.cve_lookup import lookup_cves
 from app.services.port_scanner import COMMON_PORTS, scan_ports
 from app.services.risk_calculator import calculate_risk
@@ -21,6 +23,10 @@ class ScanInput(BaseModel):
 
 class ScheduledScanInput(ScanInput):
     interval_minutes: int = Field(1440, ge=15, le=43200)
+
+
+class HistoryResetInput(BaseModel):
+    confirmation: Literal["REINICIAR"]
 
 
 def serialize_scan(scan: Scan) -> dict:
@@ -130,6 +136,64 @@ def create_scan(
 def list_scans(db: Session = Depends(get_db), _user: User = Depends(get_current_user)):
     scans = db.query(Scan).order_by(Scan.started_at.desc()).limit(25).all()
     return [serialize_scan(scan) for scan in scans]
+
+
+@router.get("/history")
+def scan_history(
+    search: str = Query("", max_length=255),
+    status: Literal["all", "queued", "running", "completed", "failed"] = "all",
+    sort: Literal["newest", "oldest", "risk"] = "newest",
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    query = db.query(Scan)
+    if search.strip():
+        query = query.filter(func.lower(Scan.target).contains(search.strip().lower(), autoescape=True))
+    if status != "all":
+        query = query.filter(Scan.status == status)
+    total = query.count()
+    page = min(page, max(1, (total + page_size - 1) // page_size))
+    ordering = {
+        "newest": (Scan.started_at.desc(), Scan.id.desc()),
+        "oldest": (Scan.started_at.asc(), Scan.id.asc()),
+        "risk": (Scan.risk_score.desc(), Scan.started_at.desc(), Scan.id.desc()),
+    }
+    items = (
+        query.options(selectinload(Scan.ports), selectinload(Scan.vulnerabilities))
+        .order_by(*ordering[sort])
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return {"items": [serialize_scan(scan) for scan in items], "total": total, "page": page, "page_size": page_size}
+
+
+@router.delete("/history")
+def reset_scan_history(
+    payload: HistoryResetInput,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_roles("admin")),
+):
+    # Serialize reset against new scans and background-job writes in PostgreSQL.
+    # A queued/running scan must finish before its results can be removed.
+    try:
+        if db.get_bind().dialect.name == "postgresql":
+            db.execute(text("LOCK TABLE scans IN EXCLUSIVE MODE"))
+        if db.query(Scan.id).filter(Scan.status.in_(["queued", "running"])).first():
+            raise HTTPException(status_code=409, detail="Espera a que terminen los escaneos en curso antes de reiniciar.")
+        deleted = {
+            "reports": db.query(Report).delete(synchronize_session=False),
+            "vulnerabilities": db.query(Vulnerability).delete(synchronize_session=False),
+            "ports": db.query(Port).delete(synchronize_session=False),
+            "scans": db.query(Scan).delete(synchronize_session=False),
+        }
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return {"message": "Historial reiniciado", "deleted": deleted}
 
 
 @router.post("/scheduled")

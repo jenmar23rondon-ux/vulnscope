@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
@@ -19,7 +21,7 @@ class LoginInput(BaseModel):
 
 
 class RegisterInput(LoginInput):
-    role: str = "analyst"
+    role: Literal["analyst"] = "analyst"
 
 
 @router.post("/login")
