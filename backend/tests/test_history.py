@@ -50,7 +50,7 @@ class HistoryTests(unittest.TestCase):
         engine.dispose()
         scratch.cleanup()
 
-    def reset(self, headers=None, confirmation="REINICIAR"):
+    def reset(self, headers=None, confirmation="RESET"):
         return self.client.request("DELETE", "/scans/history", headers=headers or self.admin, json={"confirmation": confirmation})
 
     def test_history_paginates_beyond_old_25_record_limit(self):
@@ -74,7 +74,7 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(self.client.get("/scans/history?page_size=1000", headers=self.admin).status_code, 422)
 
     def test_reset_denies_unauthenticated_and_non_admin_users(self):
-        self.assertIn(self.client.request("DELETE", "/scans/history", json={"confirmation": "REINICIAR"}).status_code, (401, 403))
+        self.assertIn(self.client.request("DELETE", "/scans/history", json={"confirmation": "RESET"}).status_code, (401, 403))
         self.assertEqual(self.reset(headers=self.analyst).status_code, 403)
         with SessionLocal() as db:
             self.assertEqual(db.query(Scan).count(), 33)
@@ -83,6 +83,14 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(self.reset(confirmation="yes").status_code, 422)
         with SessionLocal() as db:
             self.assertEqual(db.query(Scan).count(), 33)
+
+    def test_previous_confirmation_still_works_for_existing_browser_tabs(self):
+        response = self.reset(confirmation="REINICIAR")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["message"], "History reset")
+        with SessionLocal() as db:
+            self.assertEqual(db.query(Scan).count(), 0)
+            self.assertEqual(db.query(ScheduledScan).count(), 1)
 
     def test_reset_clears_all_results_and_metrics_but_keeps_accounts_and_schedules(self):
         response = self.reset()

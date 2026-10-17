@@ -133,7 +133,7 @@ function Dashboard() {
       setHistoryVersion((value) => value + 1);
       setLoadError("");
     } catch {
-      if (sequence === loadSequence.current) setLoadError("No se pudieron actualizar las métricas. Revisa tu conexión y vuelve a intentarlo.");
+      if (sequence === loadSequence.current) setLoadError("Could not update dashboard metrics. Check your connection and try again.");
     }
   }, []);
 
@@ -168,7 +168,7 @@ function Dashboard() {
 
   return (
     <main className="content">
-      {loadError && <div className="error" role="alert">{loadError} <button type="button" className="button-secondary" onClick={() => void loadData()}>Reintentar</button></div>}
+      {loadError && <div className="error" role="alert">{loadError} <button type="button" className="button-secondary" onClick={() => void loadData()}>Try again</button></div>}
       <div className="hero">
         <div>
           <p className="eyebrow">Security Project 5</p>

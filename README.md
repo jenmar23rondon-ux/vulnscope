@@ -148,12 +148,12 @@ Password: Admin1234
 The dashboard history supports case-insensitive target search, status filters,
 date/risk sorting and pagination across the complete history.
 
-Administrators can choose **Reiniciar historial**, then type **REINICIAR** to
+Administrators can choose **Reset history**, then type **REINICIAR** to
 confirm. This permanently removes all scans, detected ports, findings and saved
 report records for the shared dashboard, and resets its metrics and charts.
 User accounts, credentials, configuration and scheduled scan definitions remain.
 Reset is refused while a scan is queued or running. The reset endpoint is
-`DELETE /scans/history`, with JSON body `{"confirmation":"REINICIAR"}`.
+`DELETE /scans/history`, with JSON body `{"confirmation":"RESET"}`.
 Public registration creates analyst accounts only.
 - Recommended next tests: scan creation, RBAC permissions, report exports and CVE lookup behavior.
 
