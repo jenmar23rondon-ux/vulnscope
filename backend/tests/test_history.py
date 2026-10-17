@@ -1,5 +1,6 @@
 """Exercise history queries and destructive resets against a disposable database."""
 import os
+from datetime import datetime, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -151,6 +152,53 @@ class HistoryTests(unittest.TestCase):
         response = self.client.post("/auth/register", json={"email": "new@example.com", "password": "test-password"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["role"], "analyst")
+
+    def test_findings_search_filters_and_exposes_source_target(self):
+        with SessionLocal() as db:
+            db.add_all([
+                Vulnerability(scan_id=1, cve="CVE-CRITICAL", severity="CRITICAL", description="Critical fixture", cvss_score=9.8),
+                Vulnerability(scan_id=1, cve="CVE-LOW", severity="LOW", description="Low fixture", cvss_score=2),
+                Vulnerability(scan_id=33, cve="CVE-LITERAL", severity="MEDIUM", description="100% fixture", cvss_score=4),
+            ])
+            db.commit()
+        response = self.client.get("/vulnerabilities/search", params={"search": "ASSET-0", "severity": "HIGH_CRITICAL"}, headers=self.admin)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["total"], 2)
+        self.assertEqual([item["cvss_score"] for item in data["items"]], [9.8, 8])
+        self.assertTrue(all(item["target"] == "asset-0.test" and item["scan_id"] == 1 for item in data["items"]))
+        literal = self.client.get("/vulnerabilities/search", params={"search": "%"}, headers=self.admin).json()
+        self.assertEqual([item["cve"] for item in literal["items"]], ["CVE-LITERAL"])
+        self.assertIn(self.client.get("/vulnerabilities/search").status_code, (401, 403))
+        self.assertEqual(self.client.get("/vulnerabilities/search?severity=invalid", headers=self.admin).status_code, 422)
+
+    def test_findings_pagination_covers_more_than_100_records(self):
+        with SessionLocal() as db:
+            db.add_all([Vulnerability(scan_id=1, cve=f"CVE-EXTRA-{index}", severity="LOW", description="Fixture", cvss_score=2) for index in range(105)])
+            db.commit()
+        response = self.client.get("/vulnerabilities/search?page=99", headers=self.admin).json()
+        self.assertEqual((response["total"], response["page"], len(response["items"])), (106, 11, 6))
+
+    def test_report_exports_require_session_and_return_valid_files(self):
+        self.assertIn(self.client.get("/reports/1.pdf").status_code, (401, 403))
+        pdf = self.client.get("/reports/1.pdf", headers=self.admin)
+        csv = self.client.get("/reports/1.csv", headers=self.admin)
+        self.assertEqual((pdf.status_code, csv.status_code), (200, 200))
+        self.assertTrue(pdf.content.startswith(b"%PDF"))
+        self.assertIn("asset-0.test", csv.text)
+        self.assertIn("attachment", pdf.headers["content-disposition"])
+
+    def test_comparison_reports_new_fixed_and_persisting_findings(self):
+        with SessionLocal() as db:
+            previous = Scan(target="compare.test", status="completed", risk_score=30, started_at=datetime.utcnow() - timedelta(days=1))
+            current = Scan(target="compare.test", status="completed", risk_score=40, started_at=datetime.utcnow())
+            db.add_all([previous, current]); db.flush()
+            for scan, cves in ((previous, ["CVE-FIXED", "CVE-SHARED"]), (current, ["CVE-NEW", "CVE-SHARED"])):
+                for cve in cves:
+                    db.add(Vulnerability(scan_id=scan.id, cve=cve, severity="HIGH", description="Fixture", cvss_score=8))
+            db.commit(); scan_id = current.id
+        result = self.client.get(f"/scans/{scan_id}/compare-previous", headers=self.admin).json()
+        self.assertEqual((result["new"], result["fixed"], result["persisting"], result["risk_delta"]), (["CVE-NEW"], ["CVE-FIXED"], ["CVE-SHARED"], 10))
 
 
 if __name__ == "__main__":

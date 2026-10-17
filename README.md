@@ -148,14 +148,27 @@ Password: Admin1234
 The dashboard history supports case-insensitive target search, status filters,
 date/risk sorting and pagination across the complete history.
 
-Administrators can choose **Reset history**, then type **REINICIAR** to
+Administrators can choose **Reset history**, then type **RESET** to
 confirm. This permanently removes all scans, detected ports, findings and saved
 report records for the shared dashboard, and resets its metrics and charts.
 User accounts, credentials, configuration and scheduled scan definitions remain.
 Reset is refused while a scan is queued or running. The reset endpoint is
 `DELETE /scans/history`, with JSON body `{"confirmation":"RESET"}`.
 Public registration creates analyst accounts only.
-- Recommended next tests: scan creation, RBAC permissions, report exports and CVE lookup behavior.
+
+## Interactive workspace
+
+- Navigate between Overview, Scans, Findings and Reports; browser history keeps each view accessible.
+- Select severity bars or shortcuts to filter findings, select a risk point to inspect its scan, and select a target to filter its history.
+- Inspect scan details in a side panel with searchable ports, expandable findings and a comparison against the previous scan of the same target.
+- Use Web, Common or Database port presets when preparing an authorized scan.
+- Search and paginate findings across the full dataset by target, CVE, description or severity.
+- Browse completed scans in the report library and download CSV/PDF files using the authenticated session.
+- Pause live updates while investigating, or refresh the workspace manually.
+
+The interface is in English. Integration tests cover history reset, authorization,
+scan creation, findings search/pagination, comparison and CSV/PDF exports using
+an isolated database and mocked scanning.
 
 ## Run Locally
 
@@ -189,6 +202,7 @@ npm run dev
 | GET | `/scans/targets/{target}/history` | View historical scan summaries for one target |
 | GET | `/scans/{scan_id}/compare-previous` | Compare a scan against the previous scan for the same target |
 | GET | `/vulnerabilities` | List detected vulnerabilities |
+| GET | `/vulnerabilities/search` | Search and paginate findings with target and severity filters |
 | GET | `/dashboard` | Return dashboard metrics |
 | GET | `/reports/{scan_id}.csv` | Export one scan as CSV |
 | GET | `/reports/{scan_id}.pdf` | Export one scan as PDF |

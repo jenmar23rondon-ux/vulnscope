@@ -43,3 +43,15 @@ export type ScanHistoryPage = {
   page: number;
   page_size: number;
 };
+
+export type Finding = Vulnerability & { scan_id: number; target: string };
+export type FindingsPage = { items: Finding[]; total: number; page: number; page_size: number };
+export type ScanComparison = {
+  scan_id: number;
+  previous_scan_id: number | null;
+  risk_delta?: number;
+  new: string[];
+  fixed: string[];
+  persisting: string[];
+};
+export type WorkspaceView = "overview" | "scans" | "findings" | "reports";
