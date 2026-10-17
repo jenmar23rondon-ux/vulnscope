@@ -14,12 +14,12 @@ type Props = {
 };
 
 const statusLabels: Record<string, string> = {
-  completed: "Completado", running: "En curso", queued: "En cola", failed: "Fallido"
+  completed: "Completed", running: "Running", queued: "Queued", failed: "Failed"
 };
 
 function scanDate(value: string) {
   const date = new Date(/(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}Z`);
-  return Number.isNaN(date.getTime()) ? "Fecha no disponible" : new Intl.DateTimeFormat("es", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? "Date unavailable" : new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
 export function ScanHistory({ totalScans, selectedId, refreshKey, canReset, onSelect, onReset }: Props) {
@@ -53,7 +53,7 @@ export function ScanHistory({ totalScans, selectedId, refreshKey, canReset, onSe
     }).then((response) => {
       if (!controller.signal.aborted) setData(response.data);
     }).catch(() => {
-      if (!controller.signal.aborted) setError("No se pudo cargar el historial. Inténtalo de nuevo.");
+      if (!controller.signal.aborted) setError("Could not load scan history. Please try again.");
     }).finally(() => {
       if (!controller.signal.aborted) setLoading(false);
     });
@@ -76,7 +76,7 @@ export function ScanHistory({ totalScans, selectedId, refreshKey, canReset, onSe
 
   async function resetHistory(event: React.FormEvent) {
     event.preventDefault();
-    if (confirmation !== "REINICIAR" || resetting) return;
+    if (confirmation !== "RESET" || resetting) return;
     setResetting(true);
     setResetError("");
     try {
@@ -84,12 +84,12 @@ export function ScanHistory({ totalScans, selectedId, refreshKey, canReset, onSe
       setData({ items: [], total: 0, page: 1, page_size: 10 });
       clearFilters();
       setShowReset(false);
-      setNotice(`Historial reiniciado. Se eliminaron ${response.data.deleted.scans} escaneos y sus resultados.`);
+      setNotice(`History reset. Deleted ${response.data.deleted.scans} scans and their results.`);
       onReset();
       setReload((value) => value + 1);
     } catch (cause) {
       const detail = isAxiosError(cause) ? cause.response?.data?.detail : null;
-      setResetError(typeof detail === "string" ? detail : "No se pudo confirmar el reinicio. Actualiza el historial para comprobar su estado antes de reintentar.");
+      setResetError(typeof detail === "string" ? detail : "Could not confirm the reset. Refresh the history to check its status before trying again.");
     } finally {
       setResetting(false);
     }
@@ -102,90 +102,90 @@ export function ScanHistory({ totalScans, selectedId, refreshKey, canReset, onSe
     <section className="panel history-panel" id="scan-history" aria-labelledby="history-heading">
       <div className="history-header">
         <div>
-          <p className="history-eyebrow"><History size={14} aria-hidden="true" /> ACTIVIDAD</p>
-          <h2 id="history-heading">Historial de escaneos</h2>
-          <p className="muted history-description">{totalScans} escaneos guardados. Selecciona uno para ver sus resultados.</p>
+          <p className="history-eyebrow"><History size={14} aria-hidden="true" /> ACTIVITY</p>
+          <h2 id="history-heading">Scan history</h2>
+          <p className="muted history-description">{totalScans} saved scans. Select one to view its results.</p>
         </div>
         <div className="history-actions">
           <button type="button" className="button-secondary" disabled={loading} onClick={() => setReload((value) => value + 1)}>
-            <RotateCcw size={16} className={loading ? "spin" : ""} aria-hidden="true" /> Actualizar
+            <RotateCcw size={16} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
           </button>
           {canReset && <button type="button" className="button-danger-outline" disabled={totalScans === 0 || resetting} onClick={() => { setConfirmation(""); setResetError(""); setShowReset(true); }}>
-            <Trash2 size={16} aria-hidden="true" /> Reiniciar historial
+            <Trash2 size={16} aria-hidden="true" /> Reset history
           </button>}
         </div>
       </div>
 
-      {notice && <div className="history-notice" role="status">{notice}<button type="button" aria-label="Cerrar aviso" onClick={() => setNotice("")}><X size={16} /></button></div>}
+      {notice && <div className="history-notice" role="status">{notice}<button type="button" aria-label="Dismiss notification" onClick={() => setNotice("")}><X size={16} /></button></div>}
 
       <div className="history-toolbar">
         <div className="history-search">
           <Search size={17} aria-hidden="true" />
-          <label className="sr-only" htmlFor="history-search">Buscar por dominio o IP</label>
-          <input id="history-search" type="search" placeholder="Buscar por dominio o IP…" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <label className="sr-only" htmlFor="history-search">Search by domain or IP</label>
+          <input id="history-search" type="search" placeholder="Search by domain or IP…" value={search} onChange={(event) => setSearch(event.target.value)} />
         </div>
         <div>
-          <label className="sr-only" htmlFor="history-status">Filtrar por estado</label>
+          <label className="sr-only" htmlFor="history-status">Filter by status</label>
           <select id="history-status" value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }}>
-            <option value="all">Todos los estados</option>
-            <option value="completed">Completados</option><option value="running">En curso</option>
-            <option value="queued">En cola</option><option value="failed">Fallidos</option>
+            <option value="all">All statuses</option>
+            <option value="completed">Completed</option><option value="running">Running</option>
+            <option value="queued">Queued</option><option value="failed">Failed</option>
           </select>
         </div>
         <div>
-          <label className="sr-only" htmlFor="history-sort">Ordenar historial</label>
+          <label className="sr-only" htmlFor="history-sort">Sort history</label>
           <select id="history-sort" value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); }}>
-            <option value="newest">Más recientes</option><option value="oldest">Más antiguos</option><option value="risk">Mayor riesgo</option>
+            <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="risk">Highest risk</option>
           </select>
         </div>
       </div>
 
-      {error ? <div className="history-empty" role="alert"><p>{error}</p><button className="button-secondary" onClick={() => setReload((value) => value + 1)}>Reintentar</button></div> : (
+      {error ? <div className="history-empty" role="alert"><p>{error}</p><button className="button-secondary" onClick={() => setReload((value) => value + 1)}>Try again</button></div> : (
         <div className="history-results" aria-busy={loading}>
-          {loading && <div className="history-loading" role="status"><LoaderCircle className="spin" size={16} /> Cargando historial…</div>}
-          {data.items.length > 0 ? <div className="history-table-scroll" tabIndex={0} role="region" aria-label="Tabla del historial de escaneos">
+          {loading && <div className="history-loading" role="status"><LoaderCircle className="spin" size={16} /> Loading history…</div>}
+          {data.items.length > 0 ? <div className="history-table-scroll" tabIndex={0} role="region" aria-label="Scan history table">
             <table className="history-table">
-              <thead><tr><th scope="col">Objetivo</th><th scope="col">Estado</th><th scope="col">Riesgo</th><th scope="col">Fecha de inicio</th><th scope="col"><span className="sr-only">Detalle</span></th></tr></thead>
+              <thead><tr><th scope="col">Target</th><th scope="col">Status</th><th scope="col">Risk</th><th scope="col">Started</th><th scope="col"><span className="sr-only">Details</span></th></tr></thead>
               <tbody>{data.items.map((scan) => <tr key={scan.id} className={selectedId === scan.id ? "is-selected" : ""}>
-                <td><button type="button" className="history-target" onClick={() => onSelect(scan)} aria-label={`Ver resultados de ${scan.target}, escaneo ${scan.id}`} aria-pressed={selectedId === scan.id}>
-                  <strong>{scan.target}</strong><span>#{scan.id} · {scan.vulnerabilities.length} hallazgos {selectedId === scan.id && "· Seleccionado"}</span>
+                <td><button type="button" className="history-target" onClick={() => onSelect(scan)} aria-label={`View results for ${scan.target}, scan ${scan.id}`} aria-pressed={selectedId === scan.id}>
+                  <strong>{scan.target}</strong><span>#{scan.id} · {scan.vulnerabilities.length} findings {selectedId === scan.id && "· Selected"}</span>
                 </button></td>
                 <td><span className={`scan-status status-${scan.status}`}><i aria-hidden="true" />{statusLabels[scan.status] ?? scan.status}</span></td>
-                <td>{scan.status === "completed" ? <span className={`history-risk ${scan.risk_score >= 60 ? "risk-high" : scan.risk_score >= 30 ? "risk-medium" : "risk-low"}`}>{scan.risk_score}<small>/100</small></span> : <span className="muted" title="Sin resultado final">—</span>}</td>
+                <td>{scan.status === "completed" ? <span className={`history-risk ${scan.risk_score >= 60 ? "risk-high" : scan.risk_score >= 30 ? "risk-medium" : "risk-low"}`}>{scan.risk_score}<small>/100</small></span> : <span className="muted" title="No final result">—</span>}</td>
                 <td><time dateTime={scan.started_at}>{scanDate(scan.started_at)}</time></td>
-                <td><button type="button" className="history-detail" aria-label={`Abrir detalle del escaneo ${scan.id}`} onClick={() => onSelect(scan)}><ArrowUpRight size={18} /></button></td>
+                <td><button type="button" className="history-detail" aria-label={`Open details for scan ${scan.id}`} onClick={() => onSelect(scan)}><ArrowUpRight size={18} /></button></td>
               </tr>)}</tbody>
             </table>
           </div> : !loading && <div className="history-empty">
-            <History size={32} aria-hidden="true" /><h3>{filtered ? "No hay coincidencias" : "Todo listo para comenzar"}</h3>
-            <p>{filtered ? "Prueba con otro objetivo o cambia el filtro de estado." : "Tu historial está vacío. Los próximos escaneos aparecerán aquí."}</p>
-            {filtered && <button type="button" className="button-secondary" onClick={clearFilters}>Limpiar filtros</button>}
+            <History size={32} aria-hidden="true" /><h3>{filtered ? "No matching scans" : "Ready for a fresh start"}</h3>
+            <p>{filtered ? "Try another target or change the status filter." : "Your history is empty. New scans will appear here."}</p>
+            {filtered && <button type="button" className="button-secondary" onClick={clearFilters}>Clear filters</button>}
           </div>}
         </div>
       )}
 
       <div className="history-footer">
-        <span aria-live="polite">{data.total > 0 ? `${(data.page - 1) * data.page_size + 1}–${Math.min(data.page * data.page_size, data.total)} de ${data.total} resultados` : "0 resultados"}</span>
+        <span aria-live="polite">{data.total > 0 ? `${(data.page - 1) * data.page_size + 1}–${Math.min(data.page * data.page_size, data.total)} of ${data.total} results` : "0 results"}</span>
         <div className="history-pagination">
-          <button type="button" className="button-secondary" aria-label="Página anterior" disabled={data.page <= 1 || loading} onClick={() => setPage(data.page - 1)}><ChevronLeft size={17} /></button>
-          <span>Página {data.page} de {pages}</span>
-          <button type="button" className="button-secondary" aria-label="Página siguiente" disabled={data.page >= pages || loading} onClick={() => setPage(data.page + 1)}><ChevronRight size={17} /></button>
+          <button type="button" className="button-secondary" aria-label="Previous page" disabled={data.page <= 1 || loading} onClick={() => setPage(data.page - 1)}><ChevronLeft size={17} /></button>
+          <span>Page {data.page} of {pages}</span>
+          <button type="button" className="button-secondary" aria-label="Next page" disabled={data.page >= pages || loading} onClick={() => setPage(data.page + 1)}><ChevronRight size={17} /></button>
         </div>
       </div>
 
       {showReset && <dialog ref={dialogRef} className="reset-dialog" aria-labelledby="reset-title" aria-describedby="reset-description" onCancel={(event) => { event.preventDefault(); closeReset(); }} onClick={(event) => { if (event.target === event.currentTarget) closeReset(); }}>
         <form onSubmit={resetHistory}>
           <div className="reset-icon"><Trash2 size={24} aria-hidden="true" /></div>
-          <h2 id="reset-title">¿Comenzar de nuevo?</h2>
-          <p id="reset-description">Se eliminará todo el historial: escaneos, puertos detectados, hallazgos e informes asociados. Las métricas y gráficas volverán a cero.</p>
-          <p className="reset-preserved">Tus usuarios, credenciales, configuración y escaneos programados se conservan.</p>
-          <div className="reset-warning">Esta acción no se puede deshacer. El reinicio afecta al historial compartido de todos los usuarios.</div>
-          <label htmlFor="reset-confirmation">Escribe <strong>REINICIAR</strong> para confirmar</label>
+          <h2 id="reset-title">Start over?</h2>
+          <p id="reset-description">This will delete all scan history: scans, detected ports, findings and associated reports. Metrics and charts will return to zero.</p>
+          <p className="reset-preserved">Your accounts, credentials, settings and scheduled scans will be kept.</p>
+          <div className="reset-warning">This action cannot be undone. Resetting affects the shared history for all users.</div>
+          <label htmlFor="reset-confirmation">Type <strong>RESET</strong> to confirm</label>
           <input id="reset-confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" spellCheck={false} disabled={resetting} />
           {resetError && <div className="error" role="alert">{resetError}</div>}
           <div className="reset-actions">
-            <button type="button" className="button-secondary" autoFocus onClick={closeReset} disabled={resetting}>Cancelar</button>
-            <button type="submit" className="button-danger" disabled={confirmation !== "REINICIAR" || resetting}>{resetting ? <><LoaderCircle size={16} className="spin" /> Reiniciando…</> : "Sí, reiniciar historial"}</button>
+            <button type="button" className="button-secondary" autoFocus onClick={closeReset} disabled={resetting}>Cancel</button>
+            <button type="submit" className="button-danger" disabled={confirmation !== "RESET" || resetting}>{resetting ? <><LoaderCircle size={16} className="spin" /> Resetting…</> : "Yes, reset history"}</button>
           </div>
         </form>
       </dialog>}

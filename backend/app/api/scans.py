@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func, text
 from sqlalchemy.orm import Session, selectinload
 
@@ -26,7 +26,13 @@ class ScheduledScanInput(ScanInput):
 
 
 class HistoryResetInput(BaseModel):
-    confirmation: Literal["REINICIAR"]
+    confirmation: Literal["RESET"]
+
+    @field_validator("confirmation", mode="before")
+    @classmethod
+    def accept_previous_confirmation(cls, value):
+        # Keep existing browser tabs working while the English UI rolls out.
+        return "RESET" if value == "REINICIAR" else value
 
 
 def serialize_scan(scan: Scan) -> dict:
@@ -182,7 +188,7 @@ def reset_scan_history(
         if db.get_bind().dialect.name == "postgresql":
             db.execute(text("LOCK TABLE scans IN EXCLUSIVE MODE"))
         if db.query(Scan.id).filter(Scan.status.in_(["queued", "running"])).first():
-            raise HTTPException(status_code=409, detail="Espera a que terminen los escaneos en curso antes de reiniciar.")
+            raise HTTPException(status_code=409, detail="Wait for active scans to finish before resetting history.")
         deleted = {
             "reports": db.query(Report).delete(synchronize_session=False),
             "vulnerabilities": db.query(Vulnerability).delete(synchronize_session=False),
@@ -193,7 +199,7 @@ def reset_scan_history(
     except Exception:
         db.rollback()
         raise
-    return {"message": "Historial reiniciado", "deleted": deleted}
+    return {"message": "History reset", "deleted": deleted}
 
 
 @router.post("/scheduled")
